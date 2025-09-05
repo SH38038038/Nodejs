@@ -24,7 +24,6 @@ pm2 stop main
 
 ## 1. Hello World
 
-![image.png](attachment:45e81832-f7fc-4f6d-9dd8-acc08ca8f019:image.png)
 
 ```jsx
 const express = require('express')
@@ -68,7 +67,8 @@ app.get('/', function(req, res) {
 ```
 
 - Express가 제공하는 라우트 기능 사용
-- 라우트 기능이란
+
+<strong>라우트 기능이란</strong>
     
     ```jsx
     const express = require('express');
@@ -286,8 +286,8 @@ app.post('/create_process', function(req, res) {
     2. 사용자가 제출 → `POST /create_process`
     3. `express.urlencoded()`가 POST 데이터를 자동으로 파싱
     4. `req.body.title`, `req.body.description` 사용 → 파일 저장
-    5. 저장 완료 → `res.redirect()`
-- ⚠️error log : GET /update 구현 중 오류 발생
+    5. 저장 완료 → `res.redirect()`<br><br>
+<strong>⚠️error log : GET /update 구현 중 오류 발생</strong>
     
     ```jsx
     1|main  | Example app listening on port 3000
@@ -474,7 +474,7 @@ app.post('/delete_process', function (req, res) {
 
 **정리**
 
-```json
+```Plaintext
 [사용자] 
    |
    | GET /create
