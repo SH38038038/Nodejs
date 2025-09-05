@@ -154,7 +154,7 @@ app.get('/', function(req, res) {
     })
     ```
     
-
+### 3-1. Read
 ```jsx
 app.get('/page/:pageId', function(req, res) {
   fs.readdir('./data', function(error, filelist){
@@ -186,6 +186,7 @@ app.get('/page/:pageId', function(req, res) {
 
 - `:pageId` → URL 경로 파라미터 → `./data` 폴더 안의 파일 목록 읽기
 
+### 3-1. Create
 ```jsx
 app.get('/create', function(req, res) {
   fs.readdir('./data', function(error, filelist){
@@ -287,6 +288,8 @@ app.post('/create_process', function(req, res) {
     3. `express.urlencoded()`가 POST 데이터를 자동으로 파싱
     4. `req.body.title`, `req.body.description` 사용 → 파일 저장
     5. 저장 완료 → `res.redirect()`<br><br>
+
+ ### 3-3. Update
 <strong>⚠️error log : GET /update 구현 중 오류 발생</strong>
     
     ```jsx
@@ -447,6 +450,8 @@ app.post('/update_process', function (req, res) {
 
 - GET /update시  `fs.readdir('./data')`  로 파일 목록 가져오고 URL 파라미터에서 파일명 받아 안전하게 처리
 - POST /update_process시 `req.on('data')` 와 `req.on('end')` 로 body 수집 후 `qs.parse` 로 객체 형태로 반환
+
+### 3-4. Delete
 
 ```jsx
 app.post('/delete_process', function (req, res) {
