@@ -5,7 +5,13 @@ var template = require('./lib/template.js');
 var path = require('path');
 var qs = require('querystring');
 var sanitizeHtml = require('sanitize-html');
+var bodyParser = require('body-parser');
+var compression = require('compression');
 const port = 3000
+
+app.use(bodyParser.urlencoded({ extended: false }));
+// 사용자가 요청할 때 마다 실행되는 미들웨어
+app.use(compression());
 
 //app.get`('/', (req, res) => res.send('Hello World!'))
 app.get('/', function (req, res) {
@@ -23,30 +29,35 @@ app.get('/', function (req, res) {
 
 app.get('/page/:pageId', function (req, res) {
   fs.readdir('./data', function (error, filelist) {
-    const filteredId = path.parse(req.params.pageId).base; // 대소문자 주의
+    const filteredId = path.parse(req.params.pageId).base;
     fs.readFile(`data/${filteredId}`, 'utf8', function (err, description) {
-      if (err) {
-        return res.status(404).send('File not found');
-      }
+      if (err) return res.status(404).send('File not found');
+
       const title = req.params.pageId;
       const sanitizedTitle = sanitizeHtml(title);
-      const sanitizedDescription = sanitizeHtml(description, {
-        allowedTags: ['h1']
-      });
+      const sanitizedDescription = sanitizeHtml(description, { allowedTags:['h1'] });
       const list = template.list(filelist);
-      const html = template.HTML(sanitizedTitle, list,
+
+      const html = template.HTML(
+        sanitizedTitle,
+        list,
         `<h2>${sanitizedTitle}</h2>${sanitizedDescription}`,
-        ` <a href="/create">create</a>
-          <a href="/update?id=${sanitizedTitle}">update</a>
-          <form action="/delete_process" method="post">
-            <input type="hidden" name="id" value="${sanitizedTitle}">
-            <input type="submit" value="delete">
-          </form>`
+        `
+        <a href="/create">create</a>
+        <a href="/update/${encodeURIComponent(sanitizedTitle)}">update</a>
+        <form action="/delete_process" method="post">
+          <input type="hidden" name="id" value="${sanitizedTitle}">
+          <input type="submit" value="delete">
+        </form>
+        `
       );
-      res.send(html); // res.send 사용
+
+      res.send(html);
     });
   });
 });
+
+
 
 app.get('/create', function (req, res) {
   fs.readdir('./data', function (error, filelist) {
@@ -68,7 +79,7 @@ app.get('/create', function (req, res) {
 });
 
 app.post('/create_process', function (req, res) {
-  var body = '';
+  /* var body = '';
   req.on('data', function (data) {
     body = body + data;
   });
@@ -80,13 +91,21 @@ app.post('/create_process', function (req, res) {
       res.writeHead(302, { Location: `/?id=${title}` });
       res.end();
     });
-  });
+  }); */
+  
+  var post = req.body; // body-parser 사용
+  var title = post.title;
+  var description = post.description;
+  fs.writeFile(`data/${title}`, description, 'utf8', function (err) {
+    res.writeHead(302, { Location: `/?id=${title}` });
+    res.end();
+  })
+ 
 });
 
-
 app.get('/update/:pageId', function (req, res) {
-  const pageId = req.params.pageId;  // params 사용
-  const filteredId = path.parse(pageId).base; // 파일명 안전 처리
+  const pageId = req.params.pageId;               // /update/test → pageId = "test"
+  const filteredId = path.parse(pageId).base;     // 파일명 안전 처리
 
   fs.readdir('./data', function (err, filelist) {
     if (err) return res.status(500).send('Internal Server Error');
@@ -95,7 +114,9 @@ app.get('/update/:pageId', function (req, res) {
       if (err) return res.status(404).send('File not found');
 
       const list = template.list(filelist);
-      const html = template.HTML(pageId, list,
+      const html = template.HTML(
+        pageId,
+        list,
         `
         <form action="/update_process" method="post">
           <input type="hidden" name="id" value="${pageId}">
@@ -104,48 +125,39 @@ app.get('/update/:pageId', function (req, res) {
           <p><input type="submit"></p>
         </form>
         `,
-        `<a href="/create">create</a> <a href="/update/${pageId}">update</a>`
+        `<a href="/create">create</a> <a href="/update/${encodeURIComponent(pageId)}">update</a>`
       );
 
-      res.send(html); 
+      res.send(html);
     });
   });
 });
 
+
 app.post('/update_process', function (req, res) {
-  var body = '';
-      req.on('data', function(data){
-          body = body + data;
-      });
-      req.on('end', function(){
-          var post = qs.parse(body);
-          var id = post.id;
-          var title = post.title;
-          var description = post.description;
-          fs.rename(`data/${id}`, `data/${title}`, function(error){
-            fs.writeFile(`data/${title}`, description, 'utf8', function(err){
-              res.writeHead(302, {Location: `/?id=${title}`});
-              res.end();
-            })
-          });
-      });
+
+  var post = req.body; // body-parser 사용
+  var id = post.id;
+  var title = post.title;
+  var description = post.description;
+  fs.rename(`data/${id}`, `data/${title}`, function (error) {
+    fs.writeFile(`data/${title}`, description, 'utf8', function (err) {
+      res.writeHead(302, { Location: `/?id=${encodeURIComponent(title)}` });
+      res.end();
+    })
+  });
 });
 
+
 app.post('/delete_process', function (req, res) {
-  var body = '';
-      req.on('data', function(data){
-          body = body + data;
-      });
-      req.on('end', function(){
-          var post = qs.parse(body);
-          var id = post.id;
-          var filteredId = path.parse(id).base;
-          fs.unlink(`data/${filteredId}`, function(error){
-            /* res.writeHead(302, {Location: `/`});
-            res.end(); */
-            res.redirect('/'); // express의 res.redirect 사용 (위의 주석 처리된 부분과 동일한 기능 수행
-          })
-      });
+  var post = req.body; // body-parser 사용
+  var id = post.id;
+  var filteredId = path.parse(id).base;
+  fs.unlink(`data/${filteredId}`, function (error) {
+    /* res.writeHead(302, {Location: `/`});
+    res.end(); */
+    res.redirect('/'); // express의 res.redirect 사용 (위의 주석 처리된 부분과 동일한 기능 수행)
+  })
 });
 
 app.listen(port, function () {
